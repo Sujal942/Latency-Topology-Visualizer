@@ -94,7 +94,7 @@ export const ControlPanel: FC<ControlPanelProps> = ({
             </Label>
             <Input
               id="search"
-              placeholder="Search server, city, country..."
+              placeholder="Search servers"
               value={filters.search}
               onChange={(e) => handleFilterChange({ search: e.target.value })}
               className="text-xs md:text-sm"

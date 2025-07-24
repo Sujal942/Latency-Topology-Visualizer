@@ -27,7 +27,6 @@ const providerColors = {
 const GLOBE_RADIUS = 100;
 
 function getLatencyColor(latency: number) {
-  // if (latency < 50) return new THREE.Color("#2E8B57"); // SeaGreen
   if (latency < 50) return new THREE.Color("#13AA57"); // SeaGreen
   if (latency < 100) return new THREE.Color("#FFD700"); // Gold
   return new THREE.Color("#DC143C"); // Crimson
@@ -64,6 +63,29 @@ const dashedGlowShader = {
   `,
 };
 
+// Custom shader for pulsating region markers
+const pulseShader = {
+  vertexShader: `
+    uniform float pulseTime;
+    varying vec3 vPosition;
+    void main() {
+      vPosition = position;
+      float scale = 1.0 + 0.3 * sin(pulseTime); // Pulsing scale
+      vec4 scaledPosition = vec4(position * scale, 1.0);
+      gl_Position = projectionMatrix * modelViewMatrix * scaledPosition;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 baseColor;
+    uniform float pulseTime;
+    varying vec3 vPosition;
+    void main() {
+      float opacity = 0.7 + 0.3 * sin(pulseTime); // Pulsing opacity
+      gl_FragColor = vec4(baseColor, opacity);
+    }
+  `,
+};
+
 const ThreeScene: FC<MapContainerProps> = memo(
   ({ geoData, layerVisibility }) => {
     const mountRef = useRef<HTMLDivElement>(null);
@@ -83,6 +105,7 @@ const ThreeScene: FC<MapContainerProps> = memo(
     const mouseRef = useRef(new THREE.Vector2(-100, -100));
     const intersectedRef = useRef<THREE.Object3D | null>(null);
     const dashOffsetRef = useRef<number>(0);
+    const pulseTimeRef = useRef<number>(0);
 
     useEffect(() => {
       if (!mountRef.current) return;
@@ -187,11 +210,23 @@ const ThreeScene: FC<MapContainerProps> = memo(
         controls.update();
 
         // Animate dashed lines with glow
-        dashOffsetRef.current += 0.15; // Faster animation for dynamic effect
+        dashOffsetRef.current += 0.15;
         linesGroupRef.current.children.forEach((child) => {
           const line = child as THREE.Line;
           if (line.material instanceof THREE.ShaderMaterial) {
             line.material.uniforms.dashOffset.value = dashOffsetRef.current;
+          }
+        });
+
+        // Animate pulse for region markers
+        pulseTimeRef.current += 0.05;
+        markersGroupRef.current.children.forEach((child) => {
+          const marker = child as THREE.Mesh;
+          if (
+            marker.userData.type === "region" &&
+            marker.material instanceof THREE.ShaderMaterial
+          ) {
+            marker.material.uniforms.pulseTime.value = pulseTimeRef.current;
           }
         });
 
@@ -361,8 +396,17 @@ const ThreeScene: FC<MapContainerProps> = memo(
             8,
             32
           );
-          const regionMaterial = new THREE.MeshBasicMaterial({
-            color: providerColors[region.provider],
+          const regionColor = new THREE.Color(
+            providerColors[region.provider as keyof typeof providerColors]
+          );
+          const regionMaterial = new THREE.ShaderMaterial({
+            vertexShader: pulseShader.vertexShader,
+            fragmentShader: pulseShader.fragmentShader,
+            uniforms: {
+              baseColor: { value: regionColor },
+              pulseTime: { value: 0 },
+            },
+            transparent: true,
           });
           const regionMarker = new THREE.Mesh(regionGeometry, regionMaterial);
           regionMarker.position.copy(pos);

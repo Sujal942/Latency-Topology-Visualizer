@@ -10,7 +10,7 @@ export const Header = () => {
             <div className="absolute inset-0 h-10 w-10 text-primary opacity-50 animate-pulse" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold font-headline text-foreground bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold font-headline text-foreground bg-gradient-to-r from-primary to-accent bg-clip-text ">
               Latency Visualizer
             </h1>
             <p className="text-sm text-muted-foreground font-medium">

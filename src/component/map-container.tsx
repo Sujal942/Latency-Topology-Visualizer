@@ -27,12 +27,42 @@ const providerColors = {
 const GLOBE_RADIUS = 100;
 
 function getLatencyColor(latency: number) {
-  if (latency < 50) return new THREE.Color("#2E8B57"); // SeaGreen
+  // if (latency < 50) return new THREE.Color("#2E8B57"); // SeaGreen
+  if (latency < 50) return new THREE.Color("#13AA57"); // SeaGreen
   if (latency < 100) return new THREE.Color("#FFD700"); // Gold
   return new THREE.Color("#DC143C"); // Crimson
 }
 
 type SelectableItem = ServerLocation | CloudRegion;
+
+// Custom shader for glowing dashed lines
+const dashedGlowShader = {
+  vertexShader: `
+    varying vec3 vPosition;
+    void main() {
+      vPosition = position;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 glowColor;
+    uniform float dashSize;
+    uniform float gapSize;
+    uniform float dashOffset;
+    uniform float glowIntensity;
+    varying vec3 vPosition;
+
+    void main() {
+      float totalSize = dashSize + gapSize;
+      float pattern = mod(vPosition.x + vPosition.y + vPosition.z + dashOffset, totalSize);
+      float alpha = pattern < dashSize ? 1.0 : 0.0;
+
+      // Glow effect
+      vec3 glow = glowColor * glowIntensity;
+      gl_FragColor = vec4(glow, alpha);
+    }
+  `,
+};
 
 const ThreeScene: FC<MapContainerProps> = memo(
   ({ geoData, layerVisibility }) => {
@@ -52,6 +82,7 @@ const ThreeScene: FC<MapContainerProps> = memo(
     const raycasterRef = useRef(new THREE.Raycaster());
     const mouseRef = useRef(new THREE.Vector2(-100, -100));
     const intersectedRef = useRef<THREE.Object3D | null>(null);
+    const dashOffsetRef = useRef<number>(0);
 
     useEffect(() => {
       if (!mountRef.current) return;
@@ -69,7 +100,7 @@ const ThreeScene: FC<MapContainerProps> = memo(
         0.1,
         2000
       );
-      camera.position.z = 250;
+      camera.position.z = window.innerWidth < 768 ? 350 : 250;
       cameraRef.current = camera;
 
       const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -98,7 +129,7 @@ const ThreeScene: FC<MapContainerProps> = memo(
       );
       const starsMaterial = new THREE.PointsMaterial({
         color: 0x888888,
-        size: 0.7,
+        size: window.innerWidth < 768 ? 0.5 : 0.7,
         transparent: true,
         opacity: 0.8,
       });
@@ -106,25 +137,22 @@ const ThreeScene: FC<MapContainerProps> = memo(
       scene.add(starField);
 
       const textureLoader = new THREE.TextureLoader();
-      textureLoader.load(
-        "https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthmap1k.jpg",
-        (texture) => {
-          const globeGeometry = new THREE.SphereGeometry(GLOBE_RADIUS, 64, 64);
-          const globeMaterial = new THREE.MeshStandardMaterial({
-            map: texture,
-            metalness: 0.3,
-            roughness: 0.7,
-          });
-          const globe = new THREE.Mesh(globeGeometry, globeMaterial);
-          scene.add(globe);
-        }
-      );
+      textureLoader.load("earth.jpg", (texture) => {
+        const globeGeometry = new THREE.SphereGeometry(GLOBE_RADIUS, 64, 64);
+        const globeMaterial = new THREE.MeshStandardMaterial({
+          map: texture,
+          metalness: 0.3,
+          roughness: 0.7,
+        });
+        const globe = new THREE.Mesh(globeGeometry, globeMaterial);
+        scene.add(globe);
+      });
 
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.05;
-      controls.minDistance = 120;
-      controls.maxDistance = 400;
+      controls.minDistance = window.innerWidth < 768 ? 150 : 120;
+      controls.maxDistance = window.innerWidth < 768 ? 500 : 400;
       controls.autoRotate = true;
       controls.autoRotateSpeed = 0.5;
       controlsRef.current = controls;
@@ -158,12 +186,12 @@ const ThreeScene: FC<MapContainerProps> = memo(
         animationFrameId = requestAnimationFrame(animate);
         controls.update();
 
+        // Animate dashed lines with glow
+        dashOffsetRef.current += 0.15; // Faster animation for dynamic effect
         linesGroupRef.current.children.forEach((child) => {
           const line = child as THREE.Line;
-          if (line.material instanceof THREE.LineDashedMaterial) {
-            // To animate dashed lines, you can update geometry or re-compute distances if needed
-            // line.computeLineDistances();
-            // No dashOffset property exists on LineDashedMaterial in three.js
+          if (line.material instanceof THREE.ShaderMaterial) {
+            line.material.uniforms.dashOffset.value = dashOffsetRef.current;
           }
         });
 
@@ -218,10 +246,13 @@ const ThreeScene: FC<MapContainerProps> = memo(
       animate();
 
       const handleResize = () => {
-        if (!mountNode || !camera || !renderer) return;
-        camera.aspect = mountNode.clientWidth / mountNode.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(mountNode.clientWidth, mountNode.clientHeight);
+        if (!mountNode || !cameraRef.current || !rendererRef.current) return;
+        const width = mountNode.clientWidth;
+        const height = mountNode.clientHeight;
+        cameraRef.current.aspect = width / height;
+        cameraRef.current.position.z = window.innerWidth < 768 ? 350 : 250;
+        cameraRef.current.updateProjectionMatrix();
+        rendererRef.current.setSize(width, height);
       };
       window.addEventListener("resize", handleResize);
 
@@ -249,7 +280,11 @@ const ThreeScene: FC<MapContainerProps> = memo(
             GLOBE_RADIUS,
             0.5
           );
-          const markerGeometry = new THREE.SphereGeometry(1.2, 16, 16);
+          const markerGeometry = new THREE.SphereGeometry(
+            window.innerWidth < 768 ? 0.8 : 1.2,
+            16,
+            16
+          );
           const markerMaterial = new THREE.MeshBasicMaterial({
             color: providerColors[server.cloudProvider],
           });
@@ -292,16 +327,20 @@ const ThreeScene: FC<MapContainerProps> = memo(
 
               const averageLatency =
                 (startServer.latency + endServer.latency) / 2;
-              const material = new THREE.LineDashedMaterial({
-                color: getLatencyColor(averageLatency),
+              const material = new THREE.ShaderMaterial({
+                vertexShader: dashedGlowShader.vertexShader,
+                fragmentShader: dashedGlowShader.fragmentShader,
+                uniforms: {
+                  glowColor: { value: getLatencyColor(averageLatency) },
+                  dashSize: { value: window.innerWidth < 768 ? 3 : 6 },
+                  gapSize: { value: window.innerWidth < 768 ? 3.5 : 7 },
+                  dashOffset: { value: 0 },
+                  glowIntensity: { value: window.innerWidth < 768 ? 1.5 : 2.0 },
+                },
                 transparent: true,
-                opacity: 1.0,
-                dashSize: 2,
-                gapSize: 3,
-                linewidth: 1, // Note: may not have an effect on all systems
+                linewidth: window.innerWidth < 768 ? 3 : 5,
               });
               const curveObject = new THREE.Line(geometry, material);
-              curveObject.computeLineDistances();
               linesGroupRef.current?.add(curveObject);
             }
           }
@@ -316,7 +355,12 @@ const ThreeScene: FC<MapContainerProps> = memo(
             GLOBE_RADIUS,
             0.2
           );
-          const regionGeometry = new THREE.TorusGeometry(2.5, 0.2, 8, 32);
+          const regionGeometry = new THREE.TorusGeometry(
+            window.innerWidth < 768 ? 1.5 : 2.5,
+            0.2,
+            8,
+            32
+          );
           const regionMaterial = new THREE.MeshBasicMaterial({
             color: providerColors[region.provider],
           });
@@ -354,11 +398,9 @@ const InfoCard: FC<{ item: SelectableItem; onClose: () => void }> = ({
   onClose,
 }) => {
   if ("exchange" in item) {
-    // It's a ServerLocation
     return <ServerInfoCard server={item as ServerLocation} onClose={onClose} />;
   }
   if ("provider" in item && "code" in item) {
-    // It's a CloudRegion
     return <RegionInfoCard region={item as CloudRegion} onClose={onClose} />;
   }
   return null;
@@ -373,9 +415,9 @@ const HoverTooltip: FC<{ item: SelectableItem }> = ({ item }) => {
   else if (isRegion) title = (item as CloudRegion).name;
 
   return (
-    <Card className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-20 w-auto max-w-xs shadow-2xl bg-background/80 backdrop-blur-sm animate-in fade-in-0">
-      <CardHeader className="p-3">
-        <CardTitle className="text-base truncate">{title}</CardTitle>
+    <Card className="pointer-events-none absolute top-2 md:top-4 left-2 md:left-1/2 -translate-x-0 md:-translate-x-1/2 z-20 w-[90vw] max-w-[20rem] shadow-2xl bg-background/80 backdrop-blur-sm animate-in fade-in-0">
+      <CardHeader className="p-2 md:p-3">
+        <CardTitle className="text-sm md:text-base truncate">{title}</CardTitle>
       </CardHeader>
     </Card>
   );
@@ -386,17 +428,19 @@ const ServerInfoCard: FC<{ server: ServerLocation; onClose: () => void }> = ({
   onClose,
 }) => {
   return (
-    <Card className="absolute bottom-4 right-4 z-10 w-80 shadow-2xl animate-in fade-in-0 zoom-in-95">
-      <CardHeader className="flex flex-row items-start justify-between pb-2">
-        <CardTitle className="text-base leading-tight">{server.name}</CardTitle>
+    <Card className="absolute bottom-2 md:bottom-4 right-2 md:right-4 z-10 w-[90vw] max-w-[20rem] shadow-2xl animate-in fade-in-0 zoom-in-95">
+      <CardHeader className="flex flex-row items-start justify-between pb-1 md:pb-2">
+        <CardTitle className="text-sm md:text-base leading-tight">
+          {server.name}
+        </CardTitle>
         <button
           onClick={onClose}
-          className="text-muted-foreground hover:text-foreground text-2xl -mt-2"
+          className="text-muted-foreground hover:text-foreground text-xl md:text-2xl -mt-1 md:-mt-2"
         >
-          &times;
+          ×
         </button>
       </CardHeader>
-      <CardContent className="text-sm space-y-2">
+      <CardContent className="text-xs md:text-sm space-y-1 md:space-y-2">
         <div>
           <strong>Exchange:</strong> {server.exchange}
         </div>
@@ -406,13 +450,13 @@ const ServerInfoCard: FC<{ server: ServerLocation; onClose: () => void }> = ({
         <div>
           <strong>Latency:</strong>{" "}
           <span
-            className="font-bold text-lg"
+            className="font-bold text-base md:text-lg"
             style={{ color: getLatencyColor(server.latency).getStyle() }}
           >
             {server.latency} ms
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
           <strong>Provider:</strong>
           <Badge
             variant="secondary"
@@ -435,21 +479,23 @@ const RegionInfoCard: FC<{ region: CloudRegion; onClose: () => void }> = ({
   onClose,
 }) => {
   return (
-    <Card className="absolute bottom-4 right-4 z-10 w-80 shadow-2xl animate-in fade-in-0 zoom-in-95">
-      <CardHeader className="flex flex-row items-start justify-between pb-2">
-        <CardTitle className="text-base leading-tight">{region.name}</CardTitle>
+    <Card className="absolute bottom-2 md:bottom-4 right-2 md:right-4 z-10 w-[90vw] max-w-[20rem] shadow-2xl animate-in fade-in-0 zoom-in-95">
+      <CardHeader className="flex flex-row items-start justify-between pb-1 md:pb-2">
+        <CardTitle className="text-sm md:text-base leading-tight">
+          {region.name}
+        </CardTitle>
         <button
           onClick={onClose}
-          className="text-muted-foreground hover:text-foreground text-2xl -mt-2"
+          className="text-muted-foreground hover:text-foreground text-xl md:text-2xl -mt-1 md:-mt-2"
         >
-          &times;
+          ×
         </button>
       </CardHeader>
-      <CardContent className="text-sm space-y-2">
+      <CardContent className="text-xs md:text-sm space-y-1 md:space-y-2">
         <div>
           <strong>Region Code:</strong> {region.code}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
           <strong>Provider:</strong>
           <Badge
             variant="secondary"

@@ -9,6 +9,8 @@ import ServerLatencyPage from "@/component/LatencyTable";
 import { ControlPanel, type Filters } from "@/component/control-panel";
 import { MapContainer } from "@/component/map-container";
 import { Skeleton } from "@/component/ui/skeleton";
+import { Button } from "@/component/ui/button";
+import { SlidersHorizontal } from "lucide-react";
 
 const LatencyMap: FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -20,6 +22,7 @@ const LatencyMap: FC = () => {
     providers: { AWS: true, GCP: true, Azure: true, Other: true },
     layers: { servers: true, regions: true },
   });
+  const [isControlPanelOpen, setIsControlPanelOpen] = useState<boolean>(false);
 
   const exchanges = useMemo(() => {
     const uniqueExchanges = [
@@ -77,10 +80,9 @@ const LatencyMap: FC = () => {
   }, [filters]);
 
   return (
-    <div className="relative h-svh w-full bg-black font-body antialiased">
+    <div className="relative min-h-[100vh] w-full bg-black font-body antialiased overflow-x-hidden">
       <Header />
-
-      <main className="relative h-full w-full">
+      <main className="relative h-[100vh] w-full flex flex-col md:flex-row">
         {loading && <MapSkeleton />}
         {error && (
           <div className="absolute inset-0 flex items-center justify-center text-destructive">
@@ -93,17 +95,36 @@ const LatencyMap: FC = () => {
               geoData={filteredGeoData}
               layerVisibility={filters.layers}
             />
+            <div className="md:hidden absolute top-20 left-2 z-20">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsControlPanelOpen(!isControlPanelOpen)}
+                className="bg-background/80 backdrop-blur-sm"
+              >
+                <SlidersHorizontal className="h-5 w-5" />
+              </Button>
+            </div>
             <ControlPanel
               filters={filters}
               onFiltersChange={setFilters}
               exchanges={exchanges}
-              className="absolute top-24 left-4 z-10 w-80 max-h-[calc(100svh-7rem)]"
+              className={`
+                absolute top-20 md:top-24 left-2 md:left-4 z-10
+                w-[90vw] md:w-80 max-h-[calc(100vh-6rem)] md:max-h-[calc(100vh-7rem)]
+                transition-transform duration-300 ease-in-out
+                ${
+                  isControlPanelOpen
+                    ? "translate-x-0"
+                    : "-translate-x-full md:translate-x-0"
+                }
+              `}
+              onClose={() => setIsControlPanelOpen(false)}
             />
           </>
         )}
       </main>
-
-      <div>
+      <div className="mt-4 h-full w-full max-w-7xl mx-auto px-4">
         <ServerLatencyPage />
       </div>
     </div>

@@ -4,15 +4,13 @@ import type { FC } from "react";
 import { useState, useMemo } from "react";
 import geoData from "@/data/data.json";
 import type { ServerLocation } from "@/types/geo";
-import { Header } from "@/component/header";
-import ServerLatencyPage from "@/component/LatencyTable";
-import { ControlPanel, type Filters } from "@/component/control-panel";
-import { MapContainer } from "@/component/map-container";
-import { Skeleton } from "@/component/ui/skeleton";
-import { Button } from "@/component/ui/button";
+import { Header } from "@/components/header";
+import { ControlPanel, type Filters } from "@/components/control-panel";
+import { MapContainer } from "@/components/map-container";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
-import LiveMarketDataPage from "@/component/liveMarketData";
-import MarketDashboard from "@/component/MarketDashboard";
+import MarketDashboard from "@/components/MarketDashboard";
 
 const LatencyMap: FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -101,7 +99,7 @@ const LatencyMap: FC = () => {
               geoData={filteredGeoData}
               layerVisibility={filters.layers}
             />
-            <div className="md:hidden absolute top-20 left-2 z-20">
+            <div className="md:hidden absolute top-20 left-2 z-20 ">
               <Button
                 variant="outline"
                 size="icon"

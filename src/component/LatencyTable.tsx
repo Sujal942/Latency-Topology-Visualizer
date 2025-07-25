@@ -33,6 +33,13 @@ const providerColors = {
   Other: "#9E9E9E",
 };
 
+function getProviderColor(provider: string): string {
+  if (providerColors.hasOwnProperty(provider)) {
+    return providerColors[provider as keyof typeof providerColors];
+  }
+  return providerColors.Other;
+}
+
 function getLatencyColor(latency: number) {
   if (latency < 50) return "#2E8B57"; // SeaGreen
   if (latency < 100) return "#FFD700"; // Gold
@@ -309,15 +316,16 @@ const ServerLatencyPage: FC = () => {
                       <TableCell className="text-xs sm:text-sm truncate">
                         {server.exchange}
                       </TableCell>
-                      <TableCell className="text-xs sm:text-sm truncate">
+                      <TableCell className="text-xs sm:text-sm">
                         {server.city}, {server.country}
                       </TableCell>
                       <TableCell className="text-xs sm:text-sm">
                         <Badge
                           variant="secondary"
                           style={{
-                            backgroundColor:
-                              providerColors[server.cloudProvider],
+                            backgroundColor: getProviderColor(
+                              server.cloudProvider
+                            ),
                             color: "#fff",
                             textShadow: "0 0 2px black",
                             fontSize: "0.75rem",

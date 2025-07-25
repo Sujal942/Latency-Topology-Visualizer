@@ -76,6 +76,10 @@ const LatencyMap: FC = () => {
       .map((region) => ({
         ...region,
         provider: region.provider as "AWS" | "GCP" | "Azure",
+        code:
+          typeof region.code === "string"
+            ? region.code
+            : (region as any).code_attention ?? "",
       }));
 
     return { servers: filteredServers, regions: filteredRegions };

@@ -4,8 +4,8 @@ import type { FC } from "react";
 import { useEffect, useRef, useState, memo } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { latLonToVector3 } from "@/lib/three-utils";
-import type { GeoData, ServerLocation, CloudRegion } from "@/types/geo";
+import { latLonToVector3 } from "../lib/three-utils";
+import type { GeoData, ServerLocation, CloudRegion } from "../types/geo";
 import { Card, CardContent, CardHeader, CardTitle } from "../component/ui/card";
 import { Badge } from "../component/ui/badge";
 

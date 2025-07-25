@@ -7,23 +7,23 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/component/ui/card";
-import { Input } from "@/component/ui/input";
-import { Label } from "@/component/ui/label";
+} from "../component/ui/card";
+import { Input } from "../component/ui/input";
+import { Label } from "../component/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/component/ui/select";
-import { Slider } from "@/component/ui/slider";
-import { Switch } from "@/component/ui/switch";
-import { Separator } from "@/component/ui/separator";
-import { cn } from "@/lib/utils";
+} from "../component/ui/select";
+import { Slider } from "../component/ui/slider";
+import { Switch } from "../component/ui/switch";
+import { Separator } from "../component/ui/separator";
+import { cn } from "../lib/utils";
 import { Server, Cloud, Network, Search, Layers } from "lucide-react";
 import { ScrollArea } from "../component/ui/scroll-area";
-import { Button } from "@/component/ui/button";
+import { Button } from "../component/ui/button";
 
 export interface Filters {
   search: string;

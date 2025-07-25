@@ -9,18 +9,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/component/ui/table";
+} from "../component/ui/table";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/component/ui/card";
+} from "../component/ui/card";
 import { ArrowDown, ArrowUp } from "lucide-react";
-import { Button } from "@/component/ui/button";
-import { Skeleton } from "@/component/ui/skeleton";
-import { Input } from "@/component/ui/input";
+import { Button } from "../component/ui/button";
+import { Skeleton } from "../component/ui/skeleton";
+import { Input } from "../component/ui/input";
 import {
   Select,
   SelectContent,

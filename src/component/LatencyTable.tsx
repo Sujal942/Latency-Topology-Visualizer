@@ -2,7 +2,7 @@
 
 import type { FC } from "react";
 import { useState, useMemo, useCallback } from "react";
-import geoData from "@/data/data.json";
+import geoData from "../data/data.json";
 import {
   Table,
   TableBody,
@@ -10,21 +10,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/component/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/component/ui/card";
-import { Badge } from "@/component/ui/badge";
-import { Button } from "@/component/ui/button";
+} from "../component/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "../component/ui/card";
+import { Badge } from "../component/ui/badge";
+import { Button } from "../component/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { Input } from "@/component/ui/input";
+import { Input } from "../component/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/component/ui/select";
-import { Switch } from "@/component/ui/switch";
-import { Label } from "@/component/ui/label";
+} from "../component/ui/select";
+import { Switch } from "../component/ui/switch";
+import { Label } from "../component/ui/label";
 
 const providerColors = {
   AWS: "#FF9900",

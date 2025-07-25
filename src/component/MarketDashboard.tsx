@@ -1,8 +1,7 @@
 "use client";
 import type { FC } from "react";
 import { useState } from "react";
-import { Button } from "@/component/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/component/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../component/ui/tabs";
 import { BarChart3, Server } from "lucide-react";
 import LiveMarketDataPage from "./liveMarketData";
 import ServerLatencyPage from "./LatencyTable";

@@ -53,6 +53,8 @@ src
 │   │   ├── header.tsx            # The main application header.
 │   │   └── map-container.tsx     # The core component that renders the 3D globe.
 │   │   └── LatencyTable.tsx      # Page displaying server data in a table.
+│   │   └── liveMarketData.tsx    # The page for the live crypto ticker data.
+│   │   └── MarketDashboard.tsx   # component for switching tabs
 │   └── ui                        # Reusable UI components from ShadCN.
 ├── data
 │   └── data.json                 # Static data for server and cloud region locations.
@@ -69,3 +71,4 @@ src
 - **`control-panel.tsx`**: This component provides the UI for filtering the data displayed on the globe. It allows users to search, filter by crypto exchange, cloud provider, and latency, and toggle the visibility of different map layers.
 - **`page.tsx` (main)**: This is the entry point of the application's UI. It manages the application's state, including the current filters, and passes the filtered data down to the `MapContainer` and `ControlPanel` components.
 - **`LatencyTable.tsx`**: This page presents the same server data but in a simple tabular format, offering a more data-centric view. It's a good example of a secondary page that reuses the same core data.
+- **`liveMarketData.tsx`**: A Live Crypto Ticker Data Page is a crucial, dynamic component of any crypto-related website or app. It provides users with live price updates, trends, and essential market data in real time, enabling informed decisions and quick insights.

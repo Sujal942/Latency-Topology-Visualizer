@@ -11,6 +11,8 @@ import { MapContainer } from "@/component/map-container";
 import { Skeleton } from "@/component/ui/skeleton";
 import { Button } from "@/component/ui/button";
 import { SlidersHorizontal } from "lucide-react";
+import LiveMarketDataPage from "@/component/liveMarketData";
+import MarketDashboard from "@/component/MarketDashboard";
 
 const LatencyMap: FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -124,8 +126,9 @@ const LatencyMap: FC = () => {
           </>
         )}
       </main>
+
       <div className="mt-4 h-full w-full max-w-7xl mx-auto px-4">
-        <ServerLatencyPage />
+        <MarketDashboard />
       </div>
     </div>
   );

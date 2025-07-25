@@ -1,7 +1,7 @@
 "use client";
 
 import type { FC } from "react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import geoData from "@/data/data.json";
 import {
   Table,
@@ -40,6 +40,8 @@ function getLatencyColor(latency: number) {
   return "#DC143C"; // Crimson
 }
 
+const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50];
+
 const ServerLatencyPage: FC = () => {
   const [isTableOpen, setIsTableOpen] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -56,6 +58,10 @@ const ServerLatencyPage: FC = () => {
     Other: true,
   });
   const [selectedExchange, setSelectedExchange] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(
+    ITEMS_PER_PAGE_OPTIONS[0]
+  );
 
   const exchanges = useMemo(() => {
     const uniqueExchanges = [
@@ -90,10 +96,25 @@ const ServerLatencyPage: FC = () => {
     });
   }, [searchTerm, latencyRange, selectedProviders, selectedExchange]);
 
-  const handleLatencyChange = (event: Event, value: number | number[]) => {
-    const [min, max] = Array.isArray(value) ? value : [0, value];
-    setLatencyRange([Math.max(0, min), Math.min(500, max)]);
-  };
+  const paginatedServers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredServers.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredServers, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredServers.length / itemsPerPage);
+
+  const handleLatencyChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>, value: number | number[]) => {
+      const [min, max] = Array.isArray(value) ? value : [0, value];
+      setLatencyRange([Math.max(0, min), Math.min(500, max)]);
+      setCurrentPage(1); // Reset to first page on filter change
+    },
+    []
+  );
+
+  const handleFilterChange = useCallback(() => {
+    setCurrentPage(1); // Reset to first page on any filter change
+  }, []);
 
   return (
     <div className="min-h-[50vh] w-full bg-black font-body text-foreground antialiased">
@@ -111,14 +132,20 @@ const ServerLatencyPage: FC = () => {
                       type="text"
                       placeholder="Search servers..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        handleFilterChange();
+                      }}
                       className="w-full bg-gray-800 text-white border-gray-600 placeholder-gray-400 rounded-md focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div className="flex items-center space-x-2">
                     <Select
                       value={selectedExchange}
-                      onValueChange={setSelectedExchange}
+                      onValueChange={(value) => {
+                        setSelectedExchange(value);
+                        handleFilterChange();
+                      }}
                     >
                       <SelectTrigger className="w-full bg-gray-800 text-white border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
                         <SelectValue placeholder="All Exchanges" />
@@ -163,12 +190,13 @@ const ServerLatencyPage: FC = () => {
                         >
                           <Switch
                             checked={selectedProviders[provider]}
-                            onCheckedChange={(checked) =>
+                            onCheckedChange={(checked) => {
                               setSelectedProviders((prev) => ({
                                 ...prev,
                                 [provider]: checked,
-                              }))
-                            }
+                              }));
+                              handleFilterChange();
+                            }}
                             className="bg-gray-600 data-[state=checked]:bg-blue-500"
                           />
                           <Label className="text-white text-sm">
@@ -199,6 +227,58 @@ const ServerLatencyPage: FC = () => {
               isTableOpen ? "block" : "hidden md:block"
             }`}
           >
+            {/* Pagination Controls */}
+            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">Items per page:</span>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-24 bg-gray-800 text-white border-gray-600">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 text-white border-gray-600">
+                    {ITEMS_PER_PAGE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option.toString()}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                  className="bg-gray-800 text-white border-gray-600 hover:bg-gray-700"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-white">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="bg-gray-800 text-white border-gray-600 hover:bg-gray-700"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -221,7 +301,7 @@ const ServerLatencyPage: FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredServers.map((server) => (
+                  {paginatedServers.map((server) => (
                     <TableRow key={server.id}>
                       <TableCell className="font-medium text-xs sm:text-sm truncate">
                         {server.name}
